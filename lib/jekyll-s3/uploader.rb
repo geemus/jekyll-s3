@@ -23,37 +23,40 @@ s3_bucket: your.blog.bucket.com
 
       protected
 
-      include AWS::S3
-
       # Please spec me!
       def upload_to_s3!
         puts "Uploading _site/* to #{@s3_bucket}"
 
-        AWS::S3::Base.establish_connection!(
-            :access_key_id     => @s3_id,
-            :secret_access_key => @s3_secret,
-            :use_ssl => true
+        storage = Fog::Storage.new(
+          :provider               => 'AWS',
+          :aws_access_key_id      => @s3_id,
+          :aws_secret_access_key  => @s3_secret
         )
-        unless Service.buckets.map(&:name).include?(@s3_bucket)
+        unless directory = storage.directories.get(@s3_bucket)
           puts("Creating bucket #{@s3_bucket}")
-          Bucket.create(@s3_bucket)
+          directory = storage.directories.create(
+            :key    => @s3_bucket,
+            :public => true
+          )
         end
-
-        bucket = Bucket.find(@s3_bucket)
 
         local_files = Dir[SITE_DIR + '/**/*'].
           delete_if { |f| File.directory?(f) }.
           map { |f| f.gsub(SITE_DIR + '/', '') }
 
-        remote_files = bucket.objects.map { |f| f.key }
+        remote_files = []
+        # use each for auto-pagination
+        directory.files.each do |file|
+          remote_files << file.key
+        end
 
         to_upload = local_files
-        to_upload.each do |f| 
-          if S3Object.store(f, open("#{SITE_DIR}/#{f}"), @s3_bucket, :access => 'public-read')
-            puts("Upload #{f}: Success!")
-          else
-            puts("Upload #{f}: FAILURE!")
-          end
+        to_upload.each do |f|
+          directory.files.create(
+            :body => File.open("#{SITE_DIR}/#{f}"),
+            :public => true
+          )
+          puts("Upload #{f}: Success!")
         end
 
         to_delete = remote_files - local_files
@@ -73,11 +76,8 @@ s3_bucket: your.blog.bucket.com
             end
           end
           if (delete_all || delete) && !(keep_all || keep)
-            if S3Object.delete(f, @s3_bucket)
-              puts("Delete #{f}: Success!")
-            else
-              puts("Delete #{f}: FAILURE!")
-            end
+            directory.files.new(:key => f).destroy # use new to avoid API lookup
+            puts("Delete #{f}: Success!")
           end
         end
 

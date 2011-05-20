@@ -2,6 +2,7 @@ require 'rubygems'
 require 'bundler'
 
 Bundler.require
+Fog.mock!
 
 require 'aruba/cucumber'
 

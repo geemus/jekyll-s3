@@ -1,6 +1,6 @@
 require 'rubygems'
+require 'fog'
 require 'yaml'
-require 'aws/s3'
 
 module Jekyll
   module S3

@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
 
   s.default_executable = %q{jekyll-s3}
 
-  s.add_dependency 'aws-s3'
+  s.add_dependency 'fog'
 
   s.add_development_dependency 'rspec'
   s.add_development_dependency 'cucumber'
