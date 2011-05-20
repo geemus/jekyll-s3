@@ -27,7 +27,7 @@ s3_bucket: your.blog.bucket.com
 
       # Please spec me!
       def upload_to_s3!
-        puts "Deploying _site/* to #{@s3_bucket}"
+        puts "Uploading _site/* to #{@s3_bucket}"
 
         AWS::S3::Base.establish_connection!(
             :access_key_id     => @s3_id,
